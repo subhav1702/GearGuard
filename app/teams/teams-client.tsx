@@ -14,13 +14,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CreateTeamDialog } from "@/components/teams/CreateTeamDialog";
+import { AddMemberDialog } from "@/components/teams/AddMemberDialog";
 
 export default function TeamsClient() {
     const [search, setSearch] = useState("");
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
     const [editingTeam, setEditingTeam] = useState<MaintenanceTeam | null>(null);
+    const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
     const queryClient = useQueryClient();
 
     const { data: teams = [], isLoading } = useQuery<MaintenanceTeam[]>({
@@ -39,6 +42,18 @@ export default function TeamsClient() {
         },
     });
 
+    const removeMemberMutation = useMutation({
+        mutationFn: ({ teamId, userId }: { teamId: string; userId: number }) =>
+            teamsApi.removeMember(teamId, userId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["teams"] });
+            toast.success("Member removed successfully");
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to remove member");
+        },
+    });
+
     const filteredTeams = teams.filter((team) =>
         team.name.toLowerCase().includes(search.toLowerCase())
     );
@@ -51,6 +66,17 @@ export default function TeamsClient() {
     const handleDelete = async (id: string) => {
         if (confirm("Are you sure you want to delete this maintenance team?")) {
             deleteMutation.mutate(id);
+        }
+    };
+
+    const handleAddMember = (teamId: string) => {
+        setActiveTeamId(teamId);
+        setIsAddMemberDialogOpen(true);
+    };
+
+    const handleRemoveMember = (teamId: string, userId: number, name: string) => {
+        if (confirm(`Are you sure you want to remove ${name} from this team?`)) {
+            removeMemberMutation.mutate({ teamId, userId });
         }
     };
 
@@ -99,6 +125,12 @@ export default function TeamsClient() {
                 onSuccess={() => queryClient.invalidateQueries({ queryKey: ["teams"] })}
             />
 
+            <AddMemberDialog
+                open={isAddMemberDialogOpen}
+                onOpenChange={setIsAddMemberDialogOpen}
+                teamId={activeTeamId}
+            />
+
             <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -131,7 +163,7 @@ export default function TeamsClient() {
                                     <DropdownMenuItem className="gap-2" onClick={() => handleEdit(team)}>
                                         <Edit className="w-4 h-4" /> Edit Team
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="gap-2">
+                                    <DropdownMenuItem className="gap-2" onClick={() => handleAddMember(team.id)}>
                                         <UserPlus className="w-4 h-4" /> Add Member
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
@@ -155,16 +187,28 @@ export default function TeamsClient() {
                         <div className="mt-6 space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Members ({team.members?.length || 0})</span>
-                                <Button variant="link" className="text-[10px] font-bold text-blue-600 p-0 h-auto uppercase">Manage</Button>
+                                <Button
+                                    variant="link"
+                                    className="text-[10px] font-bold text-blue-600 p-0 h-auto uppercase"
+                                    onClick={() => handleAddMember(team.id)}
+                                >
+                                    Add
+                                </Button>
                             </div>
 
                             <div className="flex -space-x-2 overflow-hidden">
                                 {team.members?.slice(0, 5).map((member) => (
-                                    <Avatar key={member.id} className="border-2 border-white w-8 h-8">
-                                        <AvatarFallback className="text-[10px] font-bold bg-slate-100 text-slate-600">
-                                            {member.name.substring(0, 2).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <div
+                                        key={member.id}
+                                        className="relative group/member"
+                                        onClick={() => handleRemoveMember(team.id, member.id, member.name)}
+                                    >
+                                        <Avatar className="border-2 border-white w-8 h-8 cursor-pointer hover:border-red-500 transition-colors">
+                                            <AvatarFallback className="text-[10px] font-bold bg-slate-100 text-slate-600 group-hover/member:bg-red-50 group-hover/member:text-red-600">
+                                                {member.name.substring(0, 2).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </div>
                                 ))}
                                 {(team.members?.length || 0) > 5 && (
                                     <div className="w-8 h-8 rounded-full bg-slate-50 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-400">
@@ -175,12 +219,6 @@ export default function TeamsClient() {
                                     <span className="text-xs text-slate-400 italic">No members yet</span>
                                 )}
                             </div>
-                        </div>
-
-                        <div className="mt-6 pt-6 border-t border-slate-50">
-                            <Button variant="outline" className="w-full rounded-xl border-slate-100 text-slate-500 font-bold hover:bg-slate-50 h-10 text-xs">
-                                View Active Requests
-                            </Button>
                         </div>
                     </div>
                 ))}

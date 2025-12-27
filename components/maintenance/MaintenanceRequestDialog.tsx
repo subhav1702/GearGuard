@@ -325,29 +325,118 @@ export function MaintenanceRequestDialog({
 
           <input type="hidden" {...register("request_type")} value={requestType} />
 
-          <DialogFooter className="gap-2 pt-4 border-t border-slate-100 sm:justify-between">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="rounded-xl font-bold h-11 px-6 text-slate-500 hover:bg-slate-50"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || loadingEquipment}
-              className="rounded-xl font-bold h-11 px-8 gap-2 bg-slate-900 hover:bg-slate-800 text-white transition-all active:scale-[0.98]"
-            >
-              {isSubmitting ? (
+          <DialogFooter className="gap-2 pt-4 border-t border-slate-100 sm:justify-between items-center">
+            <div className="flex gap-2 mr-auto">
+              {isEditMode && request && (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  {isEditMode ? "Updating..." : "Creating..."}
+                  {request.status === "pending" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await maintenanceRequestsApi.assignSelf(request.id);
+                          toast.success("Request assigned to you");
+                          onSuccess?.();
+                          onOpenChange(false);
+                        } catch (err) {
+                          toast.error("Failed to assign request");
+                        }
+                      }}
+                      className="rounded-xl font-bold h-11 px-4 border-slate-200 text-slate-700 hover:bg-slate-50"
+                    >
+                      Assign to Me
+                    </Button>
+                  )}
+                  {request.status === "assigned" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await maintenanceRequestsApi.startWork(request.id);
+                          toast.success("Work started");
+                          onSuccess?.();
+                          onOpenChange(false);
+                        } catch (err) {
+                          toast.error("Failed to start work");
+                        }
+                      }}
+                      className="rounded-xl font-bold h-11 px-4 border-blue-200 text-blue-700 hover:bg-blue-50"
+                    >
+                      Start Work
+                    </Button>
+                  )}
+                  {request.status === "in_progress" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        const duration = prompt("Enter duration in hours:");
+                        if (duration) {
+                          try {
+                            await maintenanceRequestsApi.complete(request.id, { duration: parseFloat(duration) });
+                            toast.success("Request completed");
+                            onSuccess?.();
+                            onOpenChange(false);
+                          } catch (err) {
+                            toast.error("Failed to complete request");
+                          }
+                        }
+                      }}
+                      className="rounded-xl font-bold h-11 px-4 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                    >
+                      Complete
+                    </Button>
+                  )}
+                  {request.status !== "scrapped" && request.status !== "completed" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        if (confirm("Are you sure you want to scrap this equipment?")) {
+                          try {
+                            await maintenanceRequestsApi.scrap(request.id);
+                            toast.success("Equipment scrapped");
+                            onSuccess?.();
+                            onOpenChange(false);
+                          } catch (err) {
+                            toast.error("Failed to scrap equipment");
+                          }
+                        }
+                      }}
+                      className="rounded-xl font-bold h-11 px-4 border-red-200 text-red-700 hover:bg-red-50"
+                    >
+                      Scrap Asset
+                    </Button>
+                  )}
                 </>
-              ) : (
-                isEditMode ? "Update Request" : "Create Request"
               )}
-            </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="rounded-xl font-bold h-11 px-6 text-slate-500 hover:bg-slate-50"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || loadingEquipment}
+                className="rounded-xl font-bold h-11 px-8 gap-2 bg-slate-900 hover:bg-slate-800 text-white transition-all active:scale-[0.98]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {isEditMode ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  isEditMode ? "Update Request" : "Create Request"
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

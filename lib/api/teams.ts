@@ -31,15 +31,17 @@ export const teamsApi = {
   },
 
   addMember: async (teamId: string, userId: number): Promise<void> => {
-    await axiosInstance.post(`${API_ROUTES.MAINTENANCE_TEAMS}/${teamId}/add_member`, { user_id: userId });
+    await axiosInstance.post(`${API_ROUTES.MAINTENANCE_TEAMS}/${teamId}/add_member`, {
+      user_id: userId,
+    });
   },
 
   removeMember: async (teamId: string, userId: number): Promise<void> => {
-    // Current documentation shows DELETE but with body, axios delete supports data config
     await axiosInstance.delete(`${API_ROUTES.MAINTENANCE_TEAMS}/${teamId}/remove_member`, {
       data: { user_id: userId },
     });
   },
+
 
   update: async (id: string, data: Partial<CreateTeamInput>): Promise<MaintenanceTeam> => {
     const response = await axiosInstance.patch<MaintenanceTeam>(`${API_ROUTES.MAINTENANCE_TEAMS}/${id}`, data);
