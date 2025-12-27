@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Hammer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import * as image from "@/assets";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -12,8 +14,9 @@ interface AuthLayoutProps {
 
 const images = [
   "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1581093458791-9f3c3250bb8b?q=80&w=2070&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1504917595217-d4dc5f61fd5b?q=80&w=2070&auto=format&fit=crop",
+  "https://plus.unsplash.com/premium_photo-1661960643553-ccfbf7d921f6?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8cmVwYWlyfGVufDB8fDB8fHww",
+  "https://plus.unsplash.com/premium_photo-1661911021547-b0188f22d548?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  "https://plus.unsplash.com/premium_photo-1712789541201-fea8447a8914?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8Y2FyJTIwbWFpbnRlbmFuY2V8ZW58MHx8MHx8fDA%3D",
 ];
 
 export function AuthLayout({ children, title, description }: AuthLayoutProps) {
@@ -45,10 +48,7 @@ export function AuthLayout({ children, title, description }: AuthLayoutProps) {
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-primary shadow-lg">
-              <Hammer className="w-6 h-6" />
-            </div>
-            <span className="font-bold text-2xl tracking-tight">GearGuard</span>
+            <Image src={image.brand_logo} alt="Brand Logo" width={256} height={171} className="invert" />
           </div>
 
           <div className="max-w-md">
