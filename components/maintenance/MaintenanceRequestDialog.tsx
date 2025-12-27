@@ -30,25 +30,29 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Wrench, AlertTriangle, CalendarCheck, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { maintenanceRequestsApi } from "@/lib/api/maintenance-requests";
-import { equipmentApi, Equipment } from "@/lib/api/equipment";
+import { maintenanceRequestsApi, MaintenanceRequest } from "@/lib/api/maintenance-requests";
+import { equipmentApi } from "@/lib/api/equipment";
 import { toast } from "sonner";
+import { Equipment } from "@/types";
 
 interface MaintenanceRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  request?: MaintenanceRequest | null;
 }
 
 export function MaintenanceRequestDialog({
   open,
   onOpenChange,
   onSuccess,
+  request,
 }: MaintenanceRequestDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requestType, setRequestType] = useState<"corrective" | "preventive">("corrective");
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loadingEquipment, setLoadingEquipment] = useState(false);
+  const isEditMode = !!request;
 
   const {
     register,
@@ -68,8 +72,32 @@ export function MaintenanceRequestDialog({
   useEffect(() => {
     if (open) {
       loadEquipment();
+      if (request) {
+        setRequestType(request.request_type);
+        if (request.request_type === "corrective") {
+          reset({
+            subject: request.subject,
+            equipment_id: request.equipment_id,
+            request_type: "corrective",
+          });
+        } else {
+          reset({
+            subject: request.subject,
+            equipment_id: request.equipment_id,
+            request_type: "preventive",
+            scheduled_at: request.scheduled_at ? request.scheduled_at.split('.')[0] : "",
+          });
+        }
+      } else {
+        setRequestType("corrective");
+        reset({
+          subject: "",
+          equipment_id: undefined,
+          request_type: "corrective",
+        } as any);
+      }
     }
-  }, [open]);
+  }, [open, request, reset]);
 
   const loadEquipment = async () => {
     setLoadingEquipment(true);
@@ -87,18 +115,23 @@ export function MaintenanceRequestDialog({
   const onSubmit = async (data: CorrectiveRequestInput | PreventiveRequestInput) => {
     setIsSubmitting(true);
     try {
-      if (requestType === "corrective") {
-        await maintenanceRequestsApi.createCorrective(data as CorrectiveRequestInput);
+      if (isEditMode && request) {
+        await maintenanceRequestsApi.update(request.id, data);
+        toast.success("Maintenance request updated successfully!");
       } else {
-        await maintenanceRequestsApi.createPreventive(data as PreventiveRequestInput);
+        if (requestType === "corrective") {
+          await maintenanceRequestsApi.createCorrective(data as CorrectiveRequestInput);
+        } else {
+          await maintenanceRequestsApi.createPreventive(data as PreventiveRequestInput);
+        }
+        toast.success("Maintenance request created successfully!");
       }
-      toast.success("Maintenance request created successfully!");
       reset();
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
-      console.error("Error creating request:", error);
-      toast.error(error.response?.data?.message || "Failed to create maintenance request");
+      console.error("Error submitting request form:", error);
+      toast.error(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} maintenance request`);
     } finally {
       setIsSubmitting(false);
     }
@@ -112,14 +145,27 @@ export function MaintenanceRequestDialog({
             <Wrench size={120} />
           </div>
           <DialogHeader className="relative z-10">
-            <DialogTitle className="text-2xl font-bold">Create Maintenance Request</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">
+              {isEditMode ? "Edit Maintenance Request" : "Create Maintenance Request"}
+            </DialogTitle>
             <DialogDescription className="text-slate-400 font-medium">
-              Report a breakdown or schedule preventive maintenance.
+              {isEditMode
+                ? "Update the details for this maintenance activity."
+                : "Report a breakdown or schedule preventive maintenance."}
             </DialogDescription>
           </DialogHeader>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 bg-white">
+          {equipment.length === 0 && !loadingEquipment && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 text-amber-800 animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />
+              <div className="text-sm">
+                <p className="font-bold">No equipment found</p>
+                <p className="opacity-80">Please register equipment first before creating a request.</p>
+              </div>
+            </div>
+          )}
           {/* Request Type Selection */}
           <div className="space-y-3">
             <Label className="text-sm font-semibold">Request Type</Label>
@@ -236,7 +282,7 @@ export function MaintenanceRequestDialog({
                     ) : (
                       equipment.map((eq) => (
                         <SelectItem key={eq.id} value={eq.id.toString()}>
-                          {eq.name} - {eq.serial_number}
+                          {eq.name}
                         </SelectItem>
                       ))
                     )}
@@ -296,10 +342,10 @@ export function MaintenanceRequestDialog({
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  {isEditMode ? "Updating..." : "Creating..."}
                 </>
               ) : (
-                "Create Request"
+                isEditMode ? "Update Request" : "Create Request"
               )}
             </Button>
           </DialogFooter>

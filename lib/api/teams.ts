@@ -40,4 +40,13 @@ export const teamsApi = {
       data: { user_id: userId },
     });
   },
+
+  update: async (id: string, data: Partial<CreateTeamInput>): Promise<MaintenanceTeam> => {
+    const response = await axiosInstance.patch<MaintenanceTeam>(`${API_ROUTES.MAINTENANCE_TEAMS}/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`${API_ROUTES.MAINTENANCE_TEAMS}/${id}`);
+  },
 };

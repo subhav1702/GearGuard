@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { User, UserRole } from "@/types";
-import { MOCK_USERS } from "@/lib/mock-data";
 import { useRouter } from "next/navigation";
 import { PAGE_ROUTES } from "./common/constants";
 
@@ -24,62 +23,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Initialize auth state from cookie or mock session
-    const getCookie = (name: string) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(";").shift();
-    };
-
-    const userId = getCookie("gearguard_session");
-    if (userId) {
-      const foundUser =
-        MOCK_USERS.find((u) => u.id === userId) ||
-        JSON.parse(localStorage.getItem("gearguard_user") || "null");
-      if (foundUser) {
-        setUser(foundUser);
+    // Initialize auth state from localStorage/session
+    const savedUser = localStorage.getItem("gearguard_user");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Failed to parse saved user", e);
       }
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const foundUser = MOCK_USERS.find((u) => u.email === email);
-      if (foundUser) {
-        setUser(foundUser);
-        document.cookie = `gearguard_session=${foundUser.id}; path=/; max-age=3600`;
-        localStorage.setItem("gearguard_user", JSON.stringify(foundUser));
-        router.push("/");
-      } else {
-        throw new Error("Invalid credentials. Try admin@gearguard.com");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    // Handled by login-client.tsx, but providing a stub here if needed
+    setIsLoading(false);
   };
 
   const signup = async (name: string, email: string) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      const newUser: User = {
-        id: "u-" + Math.random().toString(36).substr(2, 9),
-        name,
-        email,
-        role: "User",
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
-      };
-      setUser(newUser);
-      document.cookie = `gearguard_session=${newUser.id}; path=/; max-age=3600`;
-      localStorage.setItem("gearguard_user", JSON.stringify(newUser));
-      router.push("/");
-    } finally {
-      setIsLoading(false);
-    }
+    // Handled by signup-client.tsx
+    setIsLoading(false);
   };
 
   const logout = () => {

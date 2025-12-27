@@ -1,32 +1,118 @@
 "use client";
 
-import { useState } from "react";
-import { MOCK_REQUESTS, MOCK_EQUIPMENT, MOCK_WORK_CENTERS, MOCK_USERS } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Wrench, Clock, AlertTriangle, Plus } from "lucide-react";
+import { Search, Wrench, Clock, AlertTriangle, Plus, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MaintenanceRequestDialog } from "@/components/maintenance/MaintenanceRequestDialog";
+import { maintenanceRequestsApi, MaintenanceRequest } from "@/lib/api/maintenance-requests";
+import { equipmentApi } from "@/lib/api/equipment";
+import { teamsApi, MaintenanceTeam } from "@/lib/api/teams";
+import { Equipment } from "@/types";
 
 export default function MaintenanceClient() {
   const [search, setSearch] = useState("");
+  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [teams, setTeams] = useState<MaintenanceTeam[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editingRequest, setEditingRequest] = useState<MaintenanceRequest | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const filteredRequests = MOCK_REQUESTS.filter((req) => {
-    const equipment = MOCK_EQUIPMENT.find((e) => e.id === req.equipmentId);
-    const workCenter = MOCK_WORK_CENTERS.find((wc) => wc.id === req.workCenterId);
+  // Fetch all data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [requestsData, equipmentData, teamsData] = await Promise.all([
+          maintenanceRequestsApi.getAll(),
+          equipmentApi.getAll(),
+          teamsApi.getAll(),
+        ]);
+
+        setRequests(requestsData);
+        setEquipment(equipmentData);
+        setTeams(teamsData);
+      } catch (err) {
+        console.error("Failed to fetch data:", err);
+        setError("Failed to load maintenance data. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const filteredRequests = requests.filter((req) => {
+    const equipmentItem = equipment.find((e) => e.id === req.equipment_id?.toString());
     return (
       req.subject.toLowerCase().includes(search.toLowerCase()) ||
-      equipment?.name.toLowerCase().includes(search.toLowerCase()) ||
-      workCenter?.name.toLowerCase().includes(search.toLowerCase())
+      equipmentItem?.name.toLowerCase().includes(search.toLowerCase()) ||
+      req.equipment_name?.toLowerCase().includes(search.toLowerCase())
     );
   });
 
-  const criticalItems = MOCK_REQUESTS.filter((r) => r.priority === "Critical").length;
-  const technicalLoad = MOCK_REQUESTS.filter((r) => r.status === "In Progress").length;
-  const pendingOverdue = MOCK_REQUESTS.filter(
-    (r) => r.status === "New" || r.status === "Blocked"
+  // Calculate metrics based on API status values
+  const criticalItems = requests.filter((r) => r.status === "pending").length;
+  const technicalLoad = requests.filter((r) => r.status === "in_progress").length;
+  const pendingOverdue = requests.filter(
+    (r) => r.status === "pending" || r.status === "assigned"
   ).length;
+
+  const handleEdit = (req: MaintenanceRequest) => {
+    setEditingRequest(req);
+    setIsDialogOpen(true);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) setEditingRequest(null);
+  };
+
+  const handleSuccess = () => {
+    maintenanceRequestsApi.getAll().then(setRequests);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+          <p className="text-sm font-medium text-slate-500">Loading records...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-[400px] items-center justify-center">
+        <div className="bg-red-50 border border-red-100 p-8 rounded-3xl flex flex-col items-center gap-4 max-w-md text-center">
+          <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-red-900">Error Loading Data</h3>
+            <p className="text-sm text-red-700/70">{error}</p>
+          </div>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="rounded-xl border-red-200 text-red-700 hover:bg-red-100"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col h-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -38,12 +124,22 @@ export default function MaintenanceClient() {
           </p>
         </div>
         <div className="flex gap-3">
-          <MaintenanceRequestDialog>
-            <Button className="rounded-xl px-6 gap-2 h-11 bg-slate-900 hover:bg-slate-800 text-white premium-shadow">
-              <Plus className="w-5 h-5" />
-              Schedule Service
-            </Button>
-          </MaintenanceRequestDialog>
+          <Button
+            onClick={() => {
+              setEditingRequest(null);
+              setIsDialogOpen(true);
+            }}
+            className="rounded-xl px-6 gap-2 h-11 bg-slate-900 hover:bg-slate-800 text-white premium-shadow"
+          >
+            <Plus className="w-5 h-5" />
+            Schedule Service
+          </Button>
+          <MaintenanceRequestDialog
+            open={isDialogOpen}
+            onOpenChange={handleOpenChange}
+            request={editingRequest}
+            onSuccess={handleSuccess}
+          />
         </div>
       </div>
 
@@ -109,7 +205,7 @@ export default function MaintenanceClient() {
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-blue-500" />
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                New
+                Pending
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -121,7 +217,13 @@ export default function MaintenanceClient() {
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500" />
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                Repaired
+                Completed
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                Scrapped
               </span>
             </div>
           </div>
@@ -142,84 +244,77 @@ export default function MaintenanceClient() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredRequests.map((req) => {
-                const equipment = MOCK_EQUIPMENT.find((e) => e.id === req.equipmentId);
-                const workCenter = MOCK_WORK_CENTERS.find((wc) => wc.id === req.workCenterId);
-                const technician = MOCK_USERS.find((u) => u.id === req.technicianId);
-                const requestor = MOCK_USERS.find((u) => u.id === req.requestorId);
+                const equipmentItem = equipment.find((e) => e.id === req.equipment_id?.toString());
 
                 return (
-                  <MaintenanceRequestDialog request={req} key={req.id}>
-                    <tr className="hover:bg-slate-50/50 transition-colors group cursor-pointer border-b border-slate-100">
-                      <td className="px-6 py-5">
-                        <span className="text-xs font-mono font-bold text-slate-400">
-                          #{req.id.toUpperCase()}
+                  <tr
+                    key={req.id}
+                    onClick={() => handleEdit(req)}
+                    className="hover:bg-slate-50/50 transition-colors group cursor-pointer border-b border-slate-100"
+                  >
+                    <td className="px-6 py-5">
+                      <span className="text-xs font-mono font-bold text-slate-400">
+                        #{req.id}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-900 leading-tight">
+                          {req.subject}
                         </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-900 leading-tight">
-                            {req.subject}
-                          </span>
-                          <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1 mt-0.5">
-                            <Wrench className="w-3 h-3" /> {equipment?.name || workCenter?.name}
-                          </span>
+                        <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1 mt-0.5">
+                          <Wrench className="w-3 h-3" /> {req.equipment_name || equipmentItem?.name || "Unknown Asset"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-200 border border-white overflow-hidden shadow-sm flex items-center justify-center">
+                          <span className="text-[8px] font-bold text-slate-500">?</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-200 border border-white overflow-hidden shadow-sm">
-                            <img src={requestor?.avatar} alt="Avatar" className="w-full h-full" />
-                          </div>
-                          <span className="text-xs font-bold text-slate-700">
-                            {requestor?.name}
-                          </span>
+                        <span className="text-xs font-bold text-slate-700">
+                          {req.request_type === "corrective" ? "Breakdown" : "Scheduled"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 border border-white overflow-hidden shadow-sm flex items-center justify-center">
+                          <Wrench className="w-3 h-3 text-slate-400" />
                         </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-slate-200 border border-white overflow-hidden shadow-sm">
-                            <img
-                              src={
-                                technician?.avatar ||
-                                `https://api.dicebear.com/7.x/avataaars/svg?seed=placeholder`
-                              }
-                              alt="Avatar"
-                              className="w-full h-full"
-                            />
-                          </div>
-                          <span className="text-xs font-bold text-slate-700">
-                            {technician?.name || "Unassigned"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5">
-                        <Badge
-                          variant="outline"
-                          className="rounded-lg px-2 py-0 text-[10px] font-bold text-slate-500 border-slate-200"
-                        >
-                          {req.category}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-5">
-                        <Badge
-                          className={cn(
-                            "rounded-full px-2 py-0 text-[10px] font-bold border-none",
-                            req.status === "New" && "bg-blue-50 text-blue-600",
-                            req.status === "In Progress" && "bg-amber-50 text-amber-600",
-                            req.status === "Repaired" && "bg-emerald-50 text-emerald-600",
-                            req.status === "Scrap" && "bg-red-50 text-red-600",
-                            req.status === "Blocked" && "bg-slate-100 text-slate-500",
-                            req.status === "Ready for next stage" && "bg-indigo-50 text-indigo-600"
-                          )}
-                        >
-                          {req.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-xs font-semibold text-slate-600">{req.company}</span>
-                      </td>
-                    </tr>
-                  </MaintenanceRequestDialog>
+                        <span className="text-xs font-bold text-slate-700">
+                          {req.assigned_to_name || "Unassigned"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <Badge
+                        variant="outline"
+                        className="rounded-lg px-2 py-0 text-[10px] font-bold text-slate-500 border-slate-200 uppercase"
+                      >
+                        {req.request_type}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-5">
+                      <Badge
+                        className={cn(
+                          "rounded-full px-2 py-0 text-[10px] font-bold border-none capitalize",
+                          req.status === "pending" && "bg-blue-50 text-blue-600",
+                          req.status === "assigned" && "bg-indigo-50 text-indigo-600",
+                          req.status === "in_progress" && "bg-amber-50 text-amber-600",
+                          req.status === "completed" && "bg-emerald-50 text-emerald-600",
+                          req.status === "scrapped" && "bg-red-50 text-red-600"
+                        )}
+                      >
+                        {req.status?.replace("_", " ")}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="text-xs font-semibold text-slate-600">
+                        {req.scheduled_at ? new Date(req.scheduled_at).toLocaleDateString() : "-"}
+                      </span>
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>

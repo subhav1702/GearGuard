@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { MOCK_REQUESTS, MOCK_EQUIPMENT } from "@/lib/mock-data";
+// import { MOCK_REQUESTS, MOCK_EQUIPMENT } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 export default function CalendarClient() {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 11, 27)); // Dec 2025
 
-  const preventiveRequests = useMemo(
-    () => MOCK_REQUESTS.filter((r) => r.type === "Preventive"),
-    []
-  );
+  // const preventiveRequests = useMemo(
+  //   () => MOCK_REQUESTS.filter((r) => r.type === "Preventive"),
+  //   []
+  // );
 
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
@@ -62,7 +62,7 @@ export default function CalendarClient() {
         ))}
         {days.map((day) => {
           const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const dayRequests = preventiveRequests.filter((r) => r.scheduledDate === dateStr);
+          const dayRequests = 'No requests';
           const isToday = day === 27 && currentDate.getMonth() === 11; // Hardcoded mock today
 
           return (
@@ -81,20 +81,6 @@ export default function CalendarClient() {
               >
                 {day}
               </span>
-              <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
-                {dayRequests.map((req) => {
-                  const equipment = MOCK_EQUIPMENT.find((e) => e.id === req.equipmentId);
-                  return (
-                    <div
-                      key={req.id}
-                      className="p-1.5 bg-blue-50 border border-blue-100 rounded-md text-[10px] group cursor-pointer hover:shadow-sm transition-all"
-                    >
-                      <p className="font-bold text-blue-700 line-clamp-1">{req.subject}</p>
-                      <p className="text-blue-600/70 font-medium">{equipment?.name}</p>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
           );
         })}

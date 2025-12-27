@@ -18,4 +18,13 @@ export const departmentsApi = {
     const response = await axiosInstance.post<Department>(API_ROUTES.DEPARTMENTS, data);
     return response.data;
   },
+
+  update: async (id: string, data: Partial<CreateDepartmentInput>): Promise<Department> => {
+    const response = await axiosInstance.patch<Department>(`${API_ROUTES.DEPARTMENTS}/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`${API_ROUTES.DEPARTMENTS}/${id}`);
+  },
 };

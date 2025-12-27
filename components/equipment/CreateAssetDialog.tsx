@@ -21,24 +21,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Wrench,
-  Hash,
-  Building2,
-  MapPin,
-  CalendarDays,
-  ShieldCheck,
-  Users,
-  UserCheck,
-  Crown,
-  Loader2,
-} from "lucide-react";
+import { teamsApi, MaintenanceTeam } from "@/lib/api/teams";
+import { toast } from "sonner";
+import { AlertTriangle, Wrench, Hash, Building2, MapPin, CalendarDays, ShieldCheck, Users, UserCheck, Crown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { equipmentApi } from "@/lib/api/equipment";
 import { departmentsApi, Department } from "@/lib/api/departments";
-import { teamsApi, MaintenanceTeam } from "@/lib/api/teams";
-import { toast } from "sonner";
 
 interface CreateAssetDialogProps {
   open: boolean;
@@ -118,6 +107,21 @@ export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAsset
         </div>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-6 bg-white">
+          {(departments.length === 0 || teams.length === 0) && !loadingDeps && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 text-amber-800 animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />
+              <div className="text-sm">
+                <p className="font-bold">Missing Prerequisites</p>
+                <p className="opacity-80">
+                  {departments.length === 0 && teams.length === 0
+                    ? "Please add a department and a maintenance team first."
+                    : departments.length === 0
+                      ? "Please add a department first."
+                      : "Please add a maintenance team first."}
+                </p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-6">
             {/* Asset Name */}
             <div className="space-y-2">
@@ -150,29 +154,29 @@ export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAsset
 
             {/* Serial Number */}
             <div className="space-y-2">
-              <Label htmlFor="serial_number" className={errors.serial_number ? "text-destructive" : ""}>
+              <Label htmlFor="serialNumber" className={errors.serialNumber ? "text-destructive" : ""}>
                 Serial Number <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <Hash
                   className={cn(
                     "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
-                    errors.serial_number ? "text-destructive" : "text-slate-400"
+                    errors.serialNumber ? "text-destructive" : "text-slate-400"
                   )}
                 />
                 <Input
-                  id="serial_number"
+                  id="serialNumber"
                   placeholder="CNC-001"
                   className={cn(
                     "pl-10 h-11 transition-all",
-                    errors.serial_number && "border-destructive focus-visible:ring-destructive"
+                    errors.serialNumber && "border-destructive focus-visible:ring-destructive"
                   )}
-                  {...register("serial_number")}
+                  {...register("serialNumber")}
                 />
               </div>
-              {errors.serial_number && (
+              {errors.serialNumber && (
                 <p className="text-[10px] font-bold text-destructive mt-1 ml-1">
-                  {errors.serial_number.message}
+                  {errors.serialNumber.message}
                 </p>
               )}
             </div>
@@ -208,69 +212,69 @@ export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAsset
 
             {/* Purchase Date */}
             <div className="space-y-2">
-              <Label htmlFor="purchase_date" className={errors.purchase_date ? "text-destructive" : ""}>
+              <Label htmlFor="purchaseDate" className={errors.purchaseDate ? "text-destructive" : ""}>
                 Purchase Date <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <CalendarDays
                   className={cn(
                     "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
-                    errors.purchase_date ? "text-destructive" : "text-slate-400"
+                    errors.purchaseDate ? "text-destructive" : "text-slate-400"
                   )}
                 />
                 <Input
-                  id="purchase_date"
+                  id="purchaseDate"
                   type="date"
                   className={cn(
                     "pl-10 h-11 transition-all",
-                    errors.purchase_date && "border-destructive focus-visible:ring-destructive"
+                    errors.purchaseDate && "border-destructive focus-visible:ring-destructive"
                   )}
-                  {...register("purchase_date")}
+                  {...register("purchaseDate")}
                 />
               </div>
-              {errors.purchase_date && (
+              {errors.purchaseDate && (
                 <p className="text-[10px] font-bold text-destructive mt-1 ml-1">
-                  {errors.purchase_date.message}
+                  {errors.purchaseDate.message}
                 </p>
               )}
             </div>
 
             {/* Warranty Expiry */}
             <div className="space-y-2">
-              <Label htmlFor="warranty_expiry" className={errors.warranty_expiry ? "text-destructive" : ""}>
+              <Label htmlFor="warrantyExpiration" className={errors.warrantyExpiration ? "text-destructive" : ""}>
                 Warranty Expiry <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <ShieldCheck
                   className={cn(
                     "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
-                    errors.warranty_expiry ? "text-destructive" : "text-slate-400"
+                    errors.warrantyExpiration ? "text-destructive" : "text-slate-400"
                   )}
                 />
                 <Input
-                  id="warranty_expiry"
+                  id="warrantyExpiration"
                   type="date"
                   className={cn(
                     "pl-10 h-11 transition-all",
-                    errors.warranty_expiry && "border-destructive focus-visible:ring-destructive"
+                    errors.warrantyExpiration && "border-destructive focus-visible:ring-destructive"
                   )}
-                  {...register("warranty_expiry")}
+                  {...register("warrantyExpiration")}
                 />
               </div>
-              {errors.warranty_expiry && (
+              {errors.warrantyExpiration && (
                 <p className="text-[10px] font-bold text-destructive mt-1 ml-1">
-                  {errors.warranty_expiry.message}
+                  {errors.warrantyExpiration.message}
                 </p>
               )}
             </div>
 
             {/* Department */}
             <div className="space-y-2">
-              <Label htmlFor="department_id" className={errors.department_id ? "text-destructive" : ""}>
+              <Label htmlFor="departmentId" className={errors.departmentId ? "text-destructive" : ""}>
                 Department <span className="text-destructive">*</span>
               </Label>
               <Controller
-                name="department_id"
+                name="departmentId"
                 control={control}
                 render={({ field }) => (
                   <Select
@@ -280,7 +284,7 @@ export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAsset
                     <SelectTrigger
                       className={cn(
                         "h-11",
-                        errors.department_id && "border-destructive focus:ring-destructive"
+                        errors.departmentId && "border-destructive focus:ring-destructive"
                       )}
                     >
                       <Building2 className="w-4 h-4 mr-2 text-slate-400" />
@@ -306,20 +310,20 @@ export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAsset
                   </Select>
                 )}
               />
-              {errors.department_id && (
+              {errors.departmentId && (
                 <p className="text-[10px] font-bold text-destructive mt-1 ml-1">
-                  {errors.department_id.message}
+                  {errors.departmentId.message}
                 </p>
               )}
             </div>
 
             {/* Maintenance Team */}
             <div className="space-y-2">
-              <Label htmlFor="maintenance_team_id" className={errors.maintenance_team_id ? "text-destructive" : ""}>
+              <Label htmlFor="maintenanceTeamId" className={errors.maintenanceTeamId ? "text-destructive" : ""}>
                 Maintenance Team <span className="text-destructive">*</span>
               </Label>
               <Controller
-                name="maintenance_team_id"
+                name="maintenanceTeamId"
                 control={control}
                 render={({ field }) => (
                   <Select
@@ -329,7 +333,7 @@ export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAsset
                     <SelectTrigger
                       className={cn(
                         "h-11",
-                        errors.maintenance_team_id && "border-destructive focus:ring-destructive"
+                        errors.maintenanceTeamId && "border-destructive focus:ring-destructive"
                       )}
                     >
                       <Users className="w-4 h-4 mr-2 text-slate-400" />
@@ -355,56 +359,56 @@ export function CreateAssetDialog({ open, onOpenChange, onSuccess }: CreateAsset
                   </Select>
                 )}
               />
-              {errors.maintenance_team_id && (
+              {errors.maintenanceTeamId && (
                 <p className="text-[10px] font-bold text-destructive mt-1 ml-1">
-                  {errors.maintenance_team_id.message}
+                  {errors.maintenanceTeamId.message}
                 </p>
               )}
             </div>
 
             {/* Owner ID (Temporary text input - should be a user dropdown) */}
             <div className="space-y-2">
-              <Label htmlFor="owner_id" className={errors.owner_id ? "text-destructive" : ""}>
+              <Label htmlFor="ownerId" className={errors.ownerId ? "text-destructive" : ""}>
                 Owner ID <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <Crown
                   className={cn(
                     "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
-                    errors.owner_id ? "text-destructive" : "text-slate-400"
+                    errors.ownerId ? "text-destructive" : "text-slate-400"
                   )}
                 />
                 <Input
-                  id="owner_id"
+                  id="ownerId"
                   type="number"
                   placeholder="Enter owner user ID"
                   className={cn(
                     "pl-10 h-11 transition-all",
-                    errors.owner_id && "border-destructive focus-visible:ring-destructive"
+                    errors.ownerId && "border-destructive focus-visible:ring-destructive"
                   )}
-                  {...register("owner_id", { valueAsNumber: true })}
+                  {...register("ownerId", { valueAsNumber: true })}
                 />
               </div>
-              {errors.owner_id && (
+              {errors.ownerId && (
                 <p className="text-[10px] font-bold text-destructive mt-1 ml-1">
-                  {errors.owner_id.message}
+                  {errors.ownerId.message}
                 </p>
               )}
             </div>
 
             {/* Default Technician ID (Optional) */}
             <div className="space-y-2">
-              <Label htmlFor="default_technician_id">Default Technician ID</Label>
+              <Label htmlFor="defaultTechnicianId">Default Technician ID</Label>
               <div className="relative">
                 <UserCheck
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
                 />
                 <Input
-                  id="default_technician_id"
+                  id="defaultTechnicianId"
                   type="number"
                   placeholder="Optional"
                   className="pl-10 h-11"
-                  {...register("default_technician_id", { valueAsNumber: true })}
+                  {...register("defaultTechnicianId", { valueAsNumber: true })}
                 />
               </div>
             </div>

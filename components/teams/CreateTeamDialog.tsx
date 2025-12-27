@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { teamSchema, TeamInput } from "@/lib/validations/teams";
 import {
@@ -21,27 +21,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Building2, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
-import { teamsApi } from "@/lib/api/teams";
+import { teamsApi, MaintenanceTeam } from "@/lib/api/teams";
 import { departmentsApi, Department } from "@/lib/api/departments";
 import { toast } from "sonner";
+import { AlertTriangle, Users, Building2, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface CreateTeamDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
+    team?: MaintenanceTeam | null;
 }
 
 export function CreateTeamDialog({
     open,
     onOpenChange,
     onSuccess,
+    team,
 }: CreateTeamDialogProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [loadingDeps, setLoadingDeps] = useState(false);
+    const isEditMode = !!team;
 
     const {
         register,
@@ -51,13 +54,28 @@ export function CreateTeamDialog({
         formState: { errors },
     } = useForm<TeamInput>({
         resolver: zodResolver(teamSchema),
+        defaultValues: {
+            name: "",
+            department_id: undefined,
+        },
     });
 
     useEffect(() => {
         if (open) {
             loadDepartments();
+            if (team) {
+                reset({
+                    name: team.name,
+                    department_id: team.department_id,
+                });
+            } else {
+                reset({
+                    name: "",
+                    department_id: undefined,
+                });
+            }
         }
-    }, [open]);
+    }, [open, team, reset]);
 
     const loadDepartments = async () => {
         setLoadingDeps(true);
@@ -72,17 +90,22 @@ export function CreateTeamDialog({
         }
     };
 
-    const onSubmit = async (data: TeamInput) => {
+    const onSubmit: SubmitHandler<TeamInput> = async (data) => {
         setIsSubmitting(true);
         try {
-            await teamsApi.create(data);
-            toast.success("Maintenance team created successfully!");
+            if (isEditMode && team) {
+                await teamsApi.update(team.id, data);
+                toast.success("Maintenance team updated successfully!");
+            } else {
+                await teamsApi.create(data);
+                toast.success("Maintenance team created successfully!");
+            }
             reset();
             onOpenChange(false);
             onSuccess?.();
         } catch (error: any) {
-            console.error("Error creating team:", error);
-            toast.error(error.response?.data?.message || "Failed to create team");
+            console.error("Error submitting team form:", error);
+            toast.error(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} team`);
         } finally {
             setIsSubmitting(false);
         }
@@ -96,14 +119,27 @@ export function CreateTeamDialog({
                         <Users size={100} />
                     </div>
                     <DialogHeader className="relative z-10">
-                        <DialogTitle className="text-2xl font-bold">Create Maintenance Team</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold">
+                            {isEditMode ? "Edit Maintenance Team" : "Create Maintenance Team"}
+                        </DialogTitle>
                         <DialogDescription className="text-slate-400 font-medium">
-                            Add a new maintenance team to manage equipment servicing.
+                            {isEditMode
+                                ? "Update the maintenance team details below."
+                                : "Add a new maintenance team to manage equipment servicing."}
                         </DialogDescription>
                     </DialogHeader>
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 bg-white">
+                    {departments.length === 0 && !loadingDeps && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 text-amber-800 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />
+                            <div className="text-sm">
+                                <p className="font-bold">No departments found</p>
+                                <p className="opacity-80">Please add a department first before creating a team.</p>
+                            </div>
+                        </div>
+                    )}
                     {/* Team Name */}
                     <div className="space-y-2">
                         <Label htmlFor="name" className={errors.name ? "text-destructive" : ""}>
@@ -199,10 +235,10 @@ export function CreateTeamDialog({
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Creating...
+                                    {isEditMode ? "Updating..." : "Creating..."}
                                 </>
                             ) : (
-                                "Create Team"
+                                isEditMode ? "Update Team" : "Create Team"
                             )}
                         </Button>
                     </DialogFooter>

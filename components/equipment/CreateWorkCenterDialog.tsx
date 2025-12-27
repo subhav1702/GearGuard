@@ -11,18 +11,31 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Factory, Hash, Tag, Building2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { Controller } from "react-hook-form";
+import { AlertTriangle, Factory, Hash, Tag, Building2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { departmentsApi, Department } from "@/lib/api/departments";
+import { equipmentApi } from "@/lib/api/equipment";
 
 const workCenterSchema = z.object({
   name: z.string().min(2, "Work Center name is required"),
   code: z.string().min(2, "Work Center code is required"),
-  category: z.string().min(2, "Category is required"),
-  department: z.string().min(2, "Department is required"),
+  category: z.literal("WorkCenter"),
+  departmentId: z.number().int().positive("Department is required"),
+  location: z.string().min(1, "Location is required"),
+  status: z.enum(["Operational", "Down", "Maintenance"]),
 });
 
 type WorkCenterFormValues = z.infer<typeof workCenterSchema>;
@@ -30,33 +43,75 @@ type WorkCenterFormValues = z.infer<typeof workCenterSchema>;
 interface CreateWorkCenterDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: WorkCenterFormValues) => void;
+  onSuccess?: () => void;
 }
 
 export function CreateWorkCenterDialog({
   open,
   onOpenChange,
-  onSubmit,
+  onSuccess,
 }: CreateWorkCenterDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   const {
     register,
     handleSubmit,
+    control,
     reset,
     formState: { errors },
   } = useForm<WorkCenterFormValues>({
     resolver: zodResolver(workCenterSchema),
+    defaultValues: {
+      category: "WorkCenter",
+      status: "Operational",
+      location: "Main Plant",
+    }
   });
+
+  useEffect(() => {
+    if (open) {
+      loadDepartments();
+    }
+  }, [open]);
+
+  const loadDepartments = async () => {
+    setIsLoadingData(true);
+    try {
+      const data = await departmentsApi.getAll();
+      setDepartments(data);
+    } catch (error) {
+      console.error("Error loading departments:", error);
+      toast.error("Failed to load departments");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
 
   const handleFormSubmit = async (data: WorkCenterFormValues) => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    onSubmit(data);
-    setIsSubmitting(false);
-    reset();
-    onOpenChange(false);
+    try {
+      // @ts-ignore - CreateEquipmentInput requires more fields like serialNumber etc
+      // but the API might allow creating WorkCenters with less
+      await equipmentApi.create({
+        ...data,
+        serialNumber: data.code, // Use code as serial number for WorkCenter
+        purchaseDate: new Date().toISOString().split('T')[0],
+        warrantyExpiration: new Date().toISOString().split('T')[0],
+        maintenanceTeamId: 1, // Default team
+        ownerId: 1, // Default owner
+      } as any);
+      toast.success("Work Center created successfully!");
+      reset();
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error: any) {
+      console.error("Error creating work center:", error);
+      toast.error(error.response?.data?.message || "Failed to create work center");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -75,6 +130,15 @@ export function CreateWorkCenterDialog({
         </div>
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6 space-y-6 bg-white">
+          {departments.length === 0 && !isLoadingData && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3 text-amber-800 animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500" />
+              <div className="text-sm">
+                <p className="font-bold">No departments found</p>
+                <p className="opacity-80">Please add a department first before creating a work center.</p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name" required className={errors.name ? "text-destructive" : ""}>
@@ -134,57 +198,61 @@ export function CreateWorkCenterDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label
-                  htmlFor="category"
-                  required
-                  className={errors.category ? "text-destructive" : ""}
-                >
-                  Category
+                <Label htmlFor="location" required className={errors.location ? "text-destructive" : ""}>
+                  Location
                 </Label>
                 <div className="relative">
                   <Tag
                     className={cn(
                       "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
-                      errors.category ? "text-destructive" : "text-slate-400"
+                      errors.location ? "text-destructive" : "text-slate-400"
                     )}
                   />
                   <Input
-                    id="category"
-                    placeholder="Production..."
+                    id="location"
+                    placeholder="Main Plant..."
                     className={cn(
                       "pl-10 h-11 transition-all",
-                      errors.category && "border-destructive focus-visible:ring-destructive"
+                      errors.location && "border-destructive focus-visible:ring-destructive"
                     )}
-                    {...register("category")}
+                    {...register("location")}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label
-                  htmlFor="department"
-                  required
-                  className={errors.department ? "text-destructive" : ""}
-                >
+                <Label htmlFor="departmentId" required className={errors.departmentId ? "text-destructive" : ""}>
                   Department
                 </Label>
-                <div className="relative">
-                  <Building2
-                    className={cn(
-                      "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors",
-                      errors.department ? "text-destructive" : "text-slate-400"
-                    )}
-                  />
-                  <Input
-                    id="department"
-                    placeholder="Manufacturing..."
-                    className={cn(
-                      "pl-10 h-11 transition-all",
-                      errors.department && "border-destructive focus-visible:ring-destructive"
-                    )}
-                    {...register("department")}
-                  />
-                </div>
+                <Controller
+                  name="departmentId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      value={field.value?.toString()}
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          "h-11",
+                          errors.departmentId && "border-destructive focus:ring-destructive"
+                        )}
+                      >
+                        <Building2 className="w-4 h-4 mr-2 text-slate-400" />
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isLoadingData ? (
+                          <SelectItem value="loading" disabled>Loading...</SelectItem>
+                        ) : departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id.toString()}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
           </div>

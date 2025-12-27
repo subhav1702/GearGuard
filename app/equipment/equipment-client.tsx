@@ -10,8 +10,10 @@ import { CreateWorkCenterDialog } from "@/components/equipment/CreateWorkCenterD
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { equipmentApi, Equipment } from "@/lib/api/equipment";
+import { equipmentApi } from "@/lib/api/equipment";
+import { teamsApi } from "@/lib/api/teams";
 import { toast } from "sonner";
+import { Equipment, MaintenanceTeam } from "@/types";
 
 export default function EquipmentClient() {
   const [search, setSearch] = useState("");
@@ -22,10 +24,18 @@ export default function EquipmentClient() {
   const queryClient = useQueryClient();
 
   // Fetch Equipment
-  const { data: equipmentList = [], isLoading } = useQuery({
+  const { data: equipmentList = [], isLoading: isLoadingEquipment } = useQuery<Equipment[]>({
     queryKey: ["equipment"],
-    queryFn: equipmentApi.getAll,
+    queryFn: () => equipmentApi.getAll(),
   });
+
+  // Fetch Teams
+  const { data: teams = [], isLoading: isLoadingTeams } = useQuery<MaintenanceTeam[]>({
+    queryKey: ["teams"],
+    queryFn: () => teamsApi.getAll(),
+  });
+
+  const isLoading = isLoadingEquipment || isLoadingTeams;
 
   // Mutations
   const createAssetMutation = useMutation({
@@ -57,26 +67,22 @@ export default function EquipmentClient() {
   });
 
 
-  const filteredEquipment = equipmentList.filter(
+  const filteredEquipment = (equipmentList || []).filter(
     (item) =>
       item.category !== "WorkCenter" &&
       (item.name.toLowerCase().includes(search.toLowerCase()) ||
         item.serialNumber.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const filteredWorkCenters = equipmentList.filter(
+  const filteredWorkCenters = (equipmentList || []).filter(
     (item) =>
       item.category === "WorkCenter" &&
       (item.name.toLowerCase().includes(search.toLowerCase()) ||
         (item.code && item.code.toLowerCase().includes(search.toLowerCase())))
   );
 
-  const handleCreateAsset = (data: any) => {
-    createAssetMutation.mutate({ ...data, category: "Machine" }); // Default or derived from form
-  };
-
-  const handleCreateWorkCenter = (data: any) => {
-    createWorkCenterMutation.mutate({ ...data, category: "WorkCenter" });
+  const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["equipment"] });
   };
 
   if (isLoading) {
@@ -118,14 +124,12 @@ export default function EquipmentClient() {
         <CreateAssetDialog
           open={isAssetDialogOpen}
           onOpenChange={setIsAssetDialogOpen}
-          onSubmit={handleCreateAsset}
-          isLoading={createAssetMutation.isPending}
+          onSuccess={handleSuccess}
         />
         <CreateWorkCenterDialog
           open={isWCDialogOpen}
           onOpenChange={setIsWCDialogOpen}
-          onSubmit={handleCreateWorkCenter}
-          isLoading={createWorkCenterMutation.isPending}
+          onSuccess={handleSuccess}
         />
       </div>
 
@@ -170,7 +174,9 @@ export default function EquipmentClient() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {viewType === "equipment"
-          ? filteredEquipment.map((item) => <EquipmentCard key={item.id} equipment={item} />)
+          ? filteredEquipment.map((item) => (
+            <EquipmentCard key={item.id} equipment={item} teams={teams} />
+          ))
           : filteredWorkCenters.map((wc) => (
             <div
               key={wc.id}
@@ -191,7 +197,7 @@ export default function EquipmentClient() {
                   {wc.code || "N/A"}
                   <span className="w-1 h-1 rounded-full bg-slate-300 mx-1" />
                   <Building2 className="w-3 h-3" />
-                  {wc.department}
+                  {wc.department || wc.departmentId}
                 </div>
               </div>
               <div className="mt-6">

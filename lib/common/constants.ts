@@ -7,7 +7,7 @@ export const API_ROUTES = {
     FORGOT_PASSWORD: `/forgot_password`,
     RESET_PASSWORD: `/reset_password`,
     DEPARTMENTS: `/departments`,
-    EQUIPMENT: `/equipment`,
+    EQUIPMENT: `/equipments`,
     MAINTENANCE_TEAMS: `/maintenance_teams`,
     MAINTENANCE_REQUESTS: `/maintenance_requests`,
 }

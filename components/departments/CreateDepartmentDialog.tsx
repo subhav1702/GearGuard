@@ -16,22 +16,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { departmentsApi } from "@/lib/api/departments";
+import { useState, useEffect } from "react";
+import { departmentsApi, Department } from "@/lib/api/departments";
 import { toast } from "sonner";
 
 interface CreateDepartmentDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess?: () => void;
+    department?: Department | null;
 }
 
 export function CreateDepartmentDialog({
     open,
     onOpenChange,
     onSuccess,
+    department,
 }: CreateDepartmentDialogProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isEditMode = !!department;
 
     const {
         register,
@@ -40,19 +43,37 @@ export function CreateDepartmentDialog({
         formState: { errors },
     } = useForm<DepartmentInput>({
         resolver: zodResolver(departmentSchema),
+        defaultValues: {
+            name: "",
+        },
     });
+
+    useEffect(() => {
+        if (open) {
+            if (department) {
+                reset({ name: department.name });
+            } else {
+                reset({ name: "" });
+            }
+        }
+    }, [open, department, reset]);
 
     const onSubmit = async (data: DepartmentInput) => {
         setIsSubmitting(true);
         try {
-            await departmentsApi.create(data);
-            toast.success("Department created successfully!");
+            if (isEditMode && department) {
+                await departmentsApi.update(department.id, data);
+                toast.success("Department updated successfully!");
+            } else {
+                await departmentsApi.create(data);
+                toast.success("Department created successfully!");
+            }
             reset();
             onOpenChange(false);
             onSuccess?.();
         } catch (error: any) {
-            console.error("Error creating department:", error);
-            toast.error(error.response?.data?.message || "Failed to create department");
+            console.error("Error submitting department form:", error);
+            toast.error(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} department`);
         } finally {
             setIsSubmitting(false);
         }
@@ -66,9 +87,13 @@ export function CreateDepartmentDialog({
                         <Building2 size={100} />
                     </div>
                     <DialogHeader className="relative z-10">
-                        <DialogTitle className="text-2xl font-bold">Create Department</DialogTitle>
+                        <DialogTitle className="text-2xl font-bold">
+                            {isEditMode ? "Edit Department" : "Create Department"}
+                        </DialogTitle>
                         <DialogDescription className="text-slate-400 font-medium">
-                            Add a new department to organize your equipment and teams.
+                            {isEditMode
+                                ? "Update the department details below."
+                                : "Add a new department to organize your equipment and teams."}
                         </DialogDescription>
                     </DialogHeader>
                 </div>
@@ -119,10 +144,10 @@ export function CreateDepartmentDialog({
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Creating...
+                                    {isEditMode ? "Updating..." : "Creating..."}
                                 </>
                             ) : (
-                                "Create Department"
+                                isEditMode ? "Update Department" : "Create Department"
                             )}
                         </Button>
                     </DialogFooter>

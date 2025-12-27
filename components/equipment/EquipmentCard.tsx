@@ -3,18 +3,18 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Equipment } from "@/types";
 import { Settings, MapPin, User as UserIcon, Calendar, ShieldCheck, Zap, Tag } from "lucide-react";
-import { MOCK_TEAMS } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { Equipment, MaintenanceTeam } from "@/types";
 
 interface EquipmentCardProps {
   equipment: Equipment;
+  teams?: MaintenanceTeam[];
   onMaintenanceClick?: (id: string) => void;
 }
 
-export function EquipmentCard({ equipment, onMaintenanceClick }: EquipmentCardProps) {
-  const team = MOCK_TEAMS.find((t) => t.id === equipment.maintenanceTeamId);
+export function EquipmentCard({ equipment, teams, onMaintenanceClick }: EquipmentCardProps) {
+  const team = teams?.find((t) => String(t.id) === String(equipment.maintenanceTeamId));
   const isScrapped = equipment.status === "scrapped";
 
   return (

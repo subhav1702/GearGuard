@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Wrench, Calendar, Settings, Hammer, Activity } from "lucide-react";
+import { LayoutDashboard, Wrench, Calendar, Settings, Hammer, Activity, Building2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import * as image from "@/assets/index";
 import Image from "next/image";
@@ -10,8 +10,10 @@ import Image from "next/image";
 const navigation = [
   // { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Departments", href: "/departments", icon: Building2 },
+  { name: "Teams", href: "/teams", icon: Users },
   { name: "Equipment", href: "/equipment", icon: Wrench },
-  { name: "Calendar", href: "/calendar", icon: Calendar },
+  // { name: "Calendar", href: "/calendar", icon: Calendar },
   // { name: "Settings", href: "/settings", icon: Settings },
 ];
 

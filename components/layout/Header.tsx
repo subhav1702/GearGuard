@@ -3,7 +3,6 @@
 import { LogOut, Bell, Search, User as UserIcon, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MOCK_USERS } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -17,7 +16,7 @@ import {
 
 export function Header() {
   const { user, logout } = useAuth();
-  const currentUser = user || MOCK_USERS[0]; // Defaulting to Admin for now
+  const currentUser = user;
 
   return (
     <header className="h-16 border-b bg-background/80 backdrop-blur-md sticky top-0 z-10 px-8 flex items-center justify-between">
@@ -42,15 +41,15 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <div className="flex items-center gap-3 pl-2 group/user cursor-pointer">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold leading-none">{currentUser.name}</p>
+                <p className="text-sm font-semibold leading-none">{currentUser?.name || "User"}</p>
                 <Badge variant="secondary" className="mt-1 font-normal text-[10px] px-1.5 py-0">
-                  {currentUser.role}
+                  {currentUser?.role || "Member"}
                 </Badge>
               </div>
               <div className="w-9 h-9 rounded-full bg-accent border border-border flex items-center justify-center overflow-hidden premium-shadow transition-transform group-hover/user:scale-105">
                 <img
-                  src={"https://api.dicebear.com/7.x/avataaars/svg?seed=John"}
-                  alt={currentUser.name}
+                  src={currentUser?.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=Guest"}
+                  alt={currentUser?.name || "User"}
                   className="w-full h-full object-cover"
                 />
               </div>

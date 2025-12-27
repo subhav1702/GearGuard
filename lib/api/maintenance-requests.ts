@@ -62,7 +62,7 @@ export const maintenanceRequestsApi = {
    */
   getByEquipment: async (equipmentId: number): Promise<MaintenanceRequest[]> => {
     const response = await axiosInstance.get<MaintenanceRequest[]>(
-      `/equipment/${equipmentId}/requests`
+      `${API_ROUTES.EQUIPMENT}/${equipmentId}/requests`
     );
     return response.data;
   },
@@ -128,5 +128,14 @@ export const maintenanceRequestsApi = {
       `${API_ROUTES.MAINTENANCE_REQUESTS}/${requestId}/scrap`
     );
     return response.data;
+  },
+
+  update: async (id: number, data: Partial<CreateCorrectiveRequestInput | CreatePreventiveRequestInput>): Promise<MaintenanceRequest> => {
+    const response = await axiosInstance.patch<MaintenanceRequest>(`${API_ROUTES.MAINTENANCE_REQUESTS}/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await axiosInstance.delete(`${API_ROUTES.MAINTENANCE_REQUESTS}/${id}`);
   },
 };

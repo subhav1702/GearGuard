@@ -8,11 +8,24 @@ export interface User {
   avatar?: string;
 }
 
-export type EquipmentCategory = "Production" | "IT" | "Logistics" | "Facilities";
+export type EquipmentCategory = "Machine" | "Vehicle" | "Tool" | "WorkCenter" | "Production" | "IT" | "Logistics" | "Facilities";
 
 export interface Team {
   id: string;
   name: string; // e.g., "Mechanics", "Electricians", "IT Support"
+}
+
+export interface TeamMember {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface MaintenanceTeam {
+  id: string;
+  name: string;
+  department_id: number;
+  members: TeamMember[];
 }
 
 export interface WorkCenter {
@@ -27,15 +40,23 @@ export interface Equipment {
   id: string;
   name: string;
   serialNumber: string;
-  category: EquipmentCategory;
-  department: string;
   location: string;
   purchaseDate: string;
   warrantyExpiration: string;
-  ownerId: string; // Employee name or ID
-  maintenanceTeamId: string;
-  defaultTechnicianId?: string;
-  status: "active" | "scrapped";
+  departmentId: number;
+  maintenanceTeamId: number;
+  defaultTechnicianId?: number;
+  ownerId: number;
+  status: "Operational" | "Down" | "Maintenance" | "active" | "scrapped";
+  model?: string;
+  manufacturer?: string;
+  installDate?: string;
+  lastService?: string;
+  nextService?: string;
+  image?: string;
+  category?: EquipmentCategory;
+  code?: string;
+  department?: string;
 }
 
 export type RequestType = "Corrective" | "Preventive";

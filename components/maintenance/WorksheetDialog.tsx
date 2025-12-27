@@ -11,27 +11,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { MessageSquare, Send, User } from "lucide-react";
-import { MOCK_USERS } from "@/lib/mock-data";
+import { MessageSquare, Send, User as UserIcon } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export function WorksheetDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [comment, setComment] = useState("");
+  const { user } = useAuth();
 
-  const mockComments = [
-    {
-      id: 1,
-      user: MOCK_USERS[1],
-      date: "2025-12-27 10:30",
-      text: "Checked the hydraulic pressure, it seems stable for now but needs watching.",
-    },
-    {
-      id: 2,
-      user: MOCK_USERS[0],
-      date: "2025-12-27 11:15",
-      text: "Please proceed with the parts replacement as soon as they arrive.",
-    },
-  ];
+  const comments: any[] = [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -48,7 +36,7 @@ export function WorksheetDialog({ children }: { children: React.ReactNode }) {
 
         <div className="p-8 space-y-6">
           <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-            {mockComments.map((c) => (
+            {comments.map((c: any) => (
               <div
                 key={c.id}
                 className="flex gap-4 p-4 rounded-2xl bg-white border border-slate-100 shadow-sm"
@@ -63,6 +51,14 @@ export function WorksheetDialog({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             ))}
+            {comments.length === 0 && (
+              <div className="py-12 text-center space-y-2">
+                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                  <MessageSquare size={20} />
+                </div>
+                <p className="text-sm font-medium text-slate-500">No notes yet.</p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-4 pt-4 border-t border-slate-100">
