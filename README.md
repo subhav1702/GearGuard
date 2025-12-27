@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GearGuard: The Ultimate Maintenance Tracker
 
-## Getting Started
+GearGuard is a modern, high-performance maintenance management system designed to track assets (equipment) and manage their maintenance lifecycle through an interactive Kanban board and scheduling tools.
 
-First, run the development server:
+## ✨ Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Interactive Kanban Board**: Drag-and-drop workflow for managing maintenance requests from initiation to completion.
+- **Smart Asset Connectivity**: Automatic routing of maintenance teams based on equipment selection.
+- **Bi-Modal Maintenance**:
+  - **Corrective**: Handles unplanned breakdowns.
+  - **Preventive**: Planned routine checkups with calendar integration.
+- **Equipment Repository**: Centralized database for equipment tracking by department, employee, and location.
+- **Role-Based Views**: Tailored interfaces for Admins and Technicians.
+- **Premium Design**: Smooth light theme with a modern, glassmorphism-inspired aesthetic.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠 Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Framework**: Next.js 15+ (App Router, Server Components)
+- **Styling**: Tailwind CSS 4+
+- **UI Components**: Shadcn UI (Radix UI)
+- **State Management**: Tanstack Query (React Query)
+- **Drag & Drop**: @dnd-kit
+- **Icons**: Lucide React
+- **Animations**: Framer Motion / Tailwind Transitions
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Getting Started
 
-## Learn More
+1. **Clone the repository**
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+3. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+4. **Build for production**:
+   ```bash
+   npm run build
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+## 📐 Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `app/`: Next.js pages and layouts (Server-first).
+- `components/`: Modular UI units.
+  - `ui/`: Core atomic components.
+  - `kanban/`: Workflow board implementation.
+  - `equipment/`: Asset-related views.
+  - `layout/`: Global shell components.
+- `lib/`: Utilities, providers, and mock API logic.
+- `types/`: TypeScript definitions.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🔒 Authentication Roles
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Admin**: Full access to register equipment, assign teams, and manage technicians.
+- **User (Technician)**: Manage assigned tasks on the Kanban board and record maintenance hours.
