@@ -48,7 +48,13 @@ export function AuthLayout({ children, title, description }: AuthLayoutProps) {
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           <div className="flex items-center gap-3">
-            <Image src={image.brand_logo} alt="Brand Logo" width={256} height={171} className="invert" />
+            <Image
+              src={image.brand_logo}
+              alt="Brand Logo"
+              width={256}
+              height={171}
+              className="invert"
+            />
           </div>
 
           <div className="max-w-md">
