@@ -16,7 +16,10 @@ export default function HomeLoading() {
           <div key={col} className="flex-1 space-y-4">
             <Skeleton className="h-8 w-32 rounded-lg mb-6" />
             {[1, 2, 3].map((card) => (
-              <div key={card} className="bg-white/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+              <div
+                key={card}
+                className="bg-white/80 p-4 rounded-2xl border border-slate-100 space-y-3"
+              >
                 <Skeleton className="h-4 w-1/4 rounded-full" />
                 <Skeleton className="h-6 w-3/4 rounded-lg" />
                 <div className="flex justify-between items-center mt-4">
