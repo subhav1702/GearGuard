@@ -3,6 +3,7 @@ import { authApi, SignupRequest } from "@/lib/api/auth";
 import { LoginInput } from "@/lib/validations/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { PAGE_ROUTES } from "../common/constants";
 
 export const useLogin = () => {
   const router = useRouter();
@@ -20,7 +21,7 @@ export const useLogin = () => {
       toast.success("Welcome back!", {
         description: "You successfully logged in to your workspace.",
       });
-      router.push("/");
+      router.push(PAGE_ROUTES.HOME);
     },
     onError: (error: any) => {
       toast.error("Login failed", {
@@ -44,7 +45,7 @@ export const useSignup = () => {
       toast.success("Account created!", {
         description: "Your workspace has been set up successfully.",
       });
-      router.push("/");
+      router.push(PAGE_ROUTES.HOME);
     },
     onError: (error: any) => {
       toast.error("Signup failed", {

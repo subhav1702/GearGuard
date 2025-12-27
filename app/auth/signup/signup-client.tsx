@@ -203,8 +203,9 @@ export default function SignupClient() {
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="employee">Employee</SelectItem>
+                    <SelectItem value="technician">Technician</SelectItem>
                   </SelectContent>
                 </Select>
               )}

@@ -1,4 +1,4 @@
-import HomeClient from "./home-client";
+import MaintenanceClient from "./maintenance/maintenance-client";
 
 export const metadata = {
   title: "Dashboard | GearGuard",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function Home() {
-  return <HomeClient />;
+  return <MaintenanceClient />;
 }

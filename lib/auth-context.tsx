@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { User, UserRole } from "@/types";
 import { MOCK_USERS } from "@/lib/mock-data";
 import { useRouter } from "next/navigation";
+import { PAGE_ROUTES } from "./common/constants";
 
 interface AuthContextType {
   user: User | null;
@@ -85,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     document.cookie = "gearguard_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     localStorage.removeItem("gearguard_user");
-    router.push("/auth/login");
+    router.push(PAGE_ROUTES.LOGIN);
   };
 
   return (
