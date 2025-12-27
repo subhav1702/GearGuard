@@ -6,6 +6,10 @@ export const API_ROUTES = {
     SIGNUP: `/signup`,
     FORGOT_PASSWORD: `/forgot_password`,
     RESET_PASSWORD: `/reset_password`,
+    DEPARTMENTS: `/departments`,
+    EQUIPMENT: `/equipment`,
+    MAINTENANCE_TEAMS: `/maintenance_teams`,
+    MAINTENANCE_REQUESTS: `/maintenance_requests`,
 }
 
 export const PAGE_ROUTES = {

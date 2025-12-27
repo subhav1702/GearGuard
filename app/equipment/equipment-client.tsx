@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { MOCK_EQUIPMENT, MOCK_WORK_CENTERS } from "@/lib/mock-data";
 import { EquipmentCard } from "@/components/equipment/EquipmentCard";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Factory, Wrench, Hash, Building2 } from "lucide-react";
+import { Search, Plus, Factory, Wrench, Hash, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateAssetDialog } from "@/components/equipment/CreateAssetDialog";
 import { CreateWorkCenterDialog } from "@/components/equipment/CreateWorkCenterDialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { equipmentApi, Equipment } from "@/lib/api/equipment";
+import { toast } from "sonner";
 
 export default function EquipmentClient() {
   const [search, setSearch] = useState("");
@@ -17,25 +19,73 @@ export default function EquipmentClient() {
   const [isWCDialogOpen, setIsWCDialogOpen] = useState(false);
   const [viewType, setViewType] = useState<"equipment" | "workCenter">("equipment");
 
-  const filteredEquipment = MOCK_EQUIPMENT.filter(
+  const queryClient = useQueryClient();
+
+  // Fetch Equipment
+  const { data: equipmentList = [], isLoading } = useQuery({
+    queryKey: ["equipment"],
+    queryFn: equipmentApi.getAll,
+  });
+
+  // Mutations
+  const createAssetMutation = useMutation({
+    mutationFn: equipmentApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["equipment"] });
+      toast.success("Asset registered successfully");
+      setIsAssetDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error("Failed to create asset", {
+        description: error.response?.data?.message || "Please try again.",
+      });
+    },
+  });
+
+  const createWorkCenterMutation = useMutation({
+    mutationFn: equipmentApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["equipment"] });
+      toast.success("Work Center created successfully");
+      setIsWCDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error("Failed to create work center", {
+        description: error.response?.data?.message || "Please try again.",
+      });
+    },
+  });
+
+
+  const filteredEquipment = equipmentList.filter(
     (item) =>
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.serialNumber.toLowerCase().includes(search.toLowerCase())
+      item.category !== "WorkCenter" &&
+      (item.name.toLowerCase().includes(search.toLowerCase()) ||
+        item.serialNumber.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const filteredWorkCenters = MOCK_WORK_CENTERS.filter(
+  const filteredWorkCenters = equipmentList.filter(
     (item) =>
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.code.toLowerCase().includes(search.toLowerCase())
+      item.category === "WorkCenter" &&
+      (item.name.toLowerCase().includes(search.toLowerCase()) ||
+        (item.code && item.code.toLowerCase().includes(search.toLowerCase())))
   );
 
   const handleCreateAsset = (data: any) => {
-    console.log("New Asset Data:", data);
+    createAssetMutation.mutate({ ...data, category: "Machine" }); // Default or derived from form
   };
 
   const handleCreateWorkCenter = (data: any) => {
-    console.log("New Work Center Data:", data);
+    createWorkCenterMutation.mutate({ ...data, category: "WorkCenter" });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full space-y-8">
@@ -69,11 +119,13 @@ export default function EquipmentClient() {
           open={isAssetDialogOpen}
           onOpenChange={setIsAssetDialogOpen}
           onSubmit={handleCreateAsset}
+          isLoading={createAssetMutation.isPending}
         />
         <CreateWorkCenterDialog
           open={isWCDialogOpen}
           onOpenChange={setIsWCDialogOpen}
           onSubmit={handleCreateWorkCenter}
+          isLoading={createWorkCenterMutation.isPending}
         />
       </div>
 
@@ -88,7 +140,7 @@ export default function EquipmentClient() {
           )}
         >
           <Wrench className="w-4 h-4" />
-          Equipment ({MOCK_EQUIPMENT.length})
+          Equipment ({filteredEquipment.length})
         </button>
         <button
           onClick={() => setViewType("workCenter")}
@@ -100,7 +152,7 @@ export default function EquipmentClient() {
           )}
         >
           <Factory className="w-4 h-4" />
-          Work Centers ({MOCK_WORK_CENTERS.length})
+          Work Centers ({filteredWorkCenters.length})
         </button>
       </div>
 
@@ -120,45 +172,45 @@ export default function EquipmentClient() {
         {viewType === "equipment"
           ? filteredEquipment.map((item) => <EquipmentCard key={item.id} equipment={item} />)
           : filteredWorkCenters.map((wc) => (
-              <div
-                key={wc.id}
-                className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                    <Factory className="w-6 h-6" />
-                  </div>
-                  <Badge className="bg-indigo-50 text-indigo-600 border-none font-bold uppercase tracking-wider text-[10px]">
-                    {wc.category}
-                  </Badge>
+            <div
+              key={wc.id}
+              className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow group"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                  <Factory className="w-6 h-6" />
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-slate-900">{wc.name}</h3>
-                  <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
-                    <Hash className="w-3 h-3" />
-                    {wc.code}
-                    <span className="w-1 h-1 rounded-full bg-slate-300 mx-1" />
-                    <Building2 className="w-3 h-3" />
-                    {wc.department}
-                  </div>
-                </div>
-                <div className="mt-6">
-                  <Button
-                    variant="outline"
-                    className="w-full rounded-xl border-slate-100 text-slate-500 font-bold hover:bg-slate-50 group-hover:border-indigo-100 group-hover:text-indigo-600"
-                  >
-                    View Production Details
-                  </Button>
+                <Badge className="bg-indigo-50 text-indigo-600 border-none font-bold uppercase tracking-wider text-[10px]">
+                  {wc.category}
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-slate-900">{wc.name}</h3>
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
+                  <Hash className="w-3 h-3" />
+                  {wc.code || "N/A"}
+                  <span className="w-1 h-1 rounded-full bg-slate-300 mx-1" />
+                  <Building2 className="w-3 h-3" />
+                  {wc.department}
                 </div>
               </div>
-            ))}
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl border-slate-100 text-slate-500 font-bold hover:bg-slate-50 group-hover:border-indigo-100 group-hover:text-indigo-600"
+                >
+                  View Production Details
+                </Button>
+              </div>
+            </div>
+          ))}
 
         {((viewType === "equipment" && filteredEquipment.length === 0) ||
           (viewType === "workCenter" && filteredWorkCenters.length === 0)) && (
-          <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
-            <p className="text-slate-400 font-bold">No items found matching your search.</p>
-          </div>
-        )}
+            <div className="col-span-full py-20 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
+              <p className="text-slate-400 font-bold">No items found matching your search.</p>
+            </div>
+          )}
       </div>
     </div>
   );

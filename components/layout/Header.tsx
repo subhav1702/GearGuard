@@ -49,7 +49,7 @@ export function Header() {
               </div>
               <div className="w-9 h-9 rounded-full bg-accent border border-border flex items-center justify-center overflow-hidden premium-shadow transition-transform group-hover/user:scale-105">
                 <img
-                  src={currentUser.avatar}
+                  src={"https://api.dicebear.com/7.x/avataaars/svg?seed=John"}
                   alt={currentUser.name}
                   className="w-full h-full object-cover"
                 />
